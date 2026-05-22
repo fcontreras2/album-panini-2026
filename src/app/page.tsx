@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useAlbum } from "@/hooks/useAlbum";
 import Header from "@/components/Header";
 import StatsPanel from "@/components/StatsPanel";
@@ -7,6 +8,22 @@ import FilterBar from "@/components/FilterBar";
 import SearchBar from "@/components/SearchBar";
 import ImportExport from "@/components/ImportExport";
 import AlbumBoard from "@/components/AlbumBoard";
+import GroupFilterBar from "@/components/GroupFilter";
+import { StatsLayout, SectionHeaderStyle, GroupFilter } from "@/types";
+import { teamSections } from "@/data/stickers";
+import { getGroup, GROUP_ORDER } from "@/data/groups";
+
+const NEXT_STATS_LAYOUT: Record<StatsLayout, StatsLayout> = {
+  compact: "extended",
+  extended: "ring",
+  ring: "compact",
+};
+
+const NEXT_SECTION_STYLE: Record<SectionHeaderStyle, SectionHeaderStyle> = {
+  minimal: "chip",
+  chip: "banner",
+  banner: "minimal",
+};
 
 export default function Home() {
   const {
@@ -24,65 +41,137 @@ export default function Home() {
     reset,
     importState,
     stats,
+    prefs,
+    toggleTheme,
+    setStatsLayout,
+    setSectionHeaderStyle,
   } = useAlbum();
+
+  const [grpFilter, setGrpFilter] = useState<GroupFilter>("all");
+  const toolbarRef = useRef<HTMLDivElement>(null);
+
+  // Track sticky toolbar height as a CSS var so section headers can pin under it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const el = toolbarRef.current;
+    if (!el) return;
+    const update = () => {
+      const h = el.offsetHeight;
+      document.documentElement.style.setProperty("--toolbar-h", h + "px");
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [hydrated]);
+
+  // Per-group progress ("have / total") for the filter chip badges
+  const grpProgress: Partial<Record<GroupFilter, string>> = {};
+  const totals: Partial<Record<string, { have: number; total: number }>> = {};
+  for (const g of GROUP_ORDER) totals[g] = { have: 0, total: 0 };
+  for (const ts of teamSections) {
+    const g = getGroup(ts.code);
+    if (!g) continue;
+    const acc = totals[g]!;
+    for (const s of ts.stickers) {
+      acc.total++;
+      if ((getCount(s.id) ?? 0) >= 1) acc.have++;
+    }
+  }
+  for (const g of GROUP_ORDER) {
+    const v = totals[g]!;
+    grpProgress[g] = `${v.have}/${v.total}`;
+  }
 
   if (!hydrated) {
     return (
       <div
-        className="min-h-screen flex flex-col items-center justify-center gap-3"
-        style={{ background: "#06080f" }}
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 12,
+          background: "var(--bg)",
+        }}
       >
-        <span className="text-4xl">⚽</span>
+        <span style={{ fontSize: 24 }}>✦</span>
         <span
-          className="font-display text-xl tracking-[0.3em]"
-          style={{ color: "rgba(251,191,36,0.5)" }}
+          className="font-mono"
+          style={{
+            fontSize: 11,
+            letterSpacing: "0.3em",
+            color: "var(--ink-3)",
+            textTransform: "uppercase",
+          }}
         >
-          CARGANDO...
+          Cargando…
         </span>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen">
-      {/* Sticky header */}
-      <div
-        className="sticky top-0 z-50"
-        style={{
-          background: "rgba(6,8,15,0.92)",
-          backdropFilter: "blur(18px)",
-          WebkitBackdropFilter: "blur(18px)",
-          borderBottom: "1px solid rgba(251,191,36,0.1)",
-          boxShadow: "0 4px 40px rgba(0,0,0,0.7)",
-        }}
-      >
-        <div className="max-w-5xl mx-auto px-4">
-          <Header lang={lang} onToggleLang={toggleLang} />
-          <StatsPanel stats={stats} lang={lang} />
-          <div className="flex flex-col sm:flex-row gap-2 pb-3">
-            <div className="flex-1">
+    <main style={{ minHeight: "100vh" }}>
+      <div className="sticky-hdr" ref={toolbarRef}>
+        <div className="app-shell">
+          <Header
+            lang={lang}
+            theme={prefs.theme}
+            onToggleLang={toggleLang}
+            onToggleTheme={toggleTheme}
+          />
+
+          <StatsPanel
+            stats={stats}
+            layout={prefs.statsLayout}
+            lang={lang}
+            onCycleLayout={() => setStatsLayout(NEXT_STATS_LAYOUT[prefs.statsLayout])}
+          />
+
+          <div style={{ padding: "16px 0 12px" }}>
+            <div className="app-toolbar">
               <SearchBar search={search} setSearch={setSearch} lang={lang} />
+              <FilterBar filter={filter} setFilter={setFilter} stats={stats} lang={lang} />
             </div>
-            <FilterBar filter={filter} setFilter={setFilter} lang={lang} />
-          </div>
-          <div className="pb-3">
-            <ImportExport
-              state={state}
-              onImport={importState}
-              onReset={reset}
+            <GroupFilterBar
+              value={grpFilter}
+              onChange={setGrpFilter}
               lang={lang}
+              progress={grpProgress}
             />
+            <ImportExport state={state} onImport={importState} onReset={reset} lang={lang} />
+          </div>
+
+          <div className="app-section-cycler">
+            <button
+              onClick={() => setSectionHeaderStyle(NEXT_SECTION_STYLE[prefs.sectionHeaderStyle])}
+              className="btn-ghost"
+              title="Cycle section header style"
+              style={{ fontSize: 9.5, letterSpacing: "0.12em", color: "var(--ink-3)" }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M3 12h18M3 18h18" />
+              </svg>
+              SECTION · {prefs.sectionHeaderStyle.toUpperCase()}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 py-6">
+      <div className="app-content">
         <AlbumBoard
           state={state}
           filter={filter}
           search={search}
           lang={lang}
+          sectionHeaderStyle={prefs.sectionHeaderStyle}
+          groupFilter={grpFilter}
           getCount={getCount}
           onIncrement={increment}
           onDecrement={decrement}

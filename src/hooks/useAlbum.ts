@@ -1,77 +1,131 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useCallback } from 'react'
-import { AlbumState, AlbumStats, FilterType, Language } from '@/types'
-import { allStickers } from '@/data/stickers'
-import { loadAlbum, saveAlbum } from '@/lib/storage'
+import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  AlbumState,
+  AlbumStats,
+  FilterType,
+  Language,
+  Theme,
+  StatsLayout,
+  SectionHeaderStyle,
+  VisualPrefs,
+} from "@/types";
+import { allStickers } from "@/data/stickers";
+import { loadAlbum, saveAlbum } from "@/lib/storage";
+
+const PREFS_KEY = "album-panini-2026:prefs";
+
+const defaultPrefs: VisualPrefs = {
+  theme: "dark",
+  statsLayout: "compact",
+  sectionHeaderStyle: "minimal",
+};
+
+function loadPrefs(): VisualPrefs {
+  if (typeof window === "undefined") return defaultPrefs;
+  try {
+    const raw = window.localStorage.getItem(PREFS_KEY);
+    if (!raw) return defaultPrefs;
+    return { ...defaultPrefs, ...(JSON.parse(raw) as Partial<VisualPrefs>) };
+  } catch {
+    return defaultPrefs;
+  }
+}
+
+function savePrefs(prefs: VisualPrefs) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+  } catch {}
+}
 
 export function useAlbum() {
-  const [state, setState] = useState<AlbumState>({})
-  const [filter, setFilter] = useState<FilterType>('all')
-  const [search, setSearch] = useState('')
-  const [lang, setLang] = useState<Language>('es')
-  const [hydrated, setHydrated] = useState(false)
+  const [state, setState] = useState<AlbumState>({});
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [search, setSearch] = useState("");
+  const [lang, setLang] = useState<Language>("es");
+  const [prefs, setPrefs] = useState<VisualPrefs>(defaultPrefs);
+  const [hydrated, setHydrated] = useState(false);
 
+  // Hydrate from localStorage
   useEffect(() => {
-    setState(loadAlbum())
-    setHydrated(true)
-  }, [])
+    setState(loadAlbum());
+    setPrefs(loadPrefs());
+    const storedLang = (typeof window !== "undefined" &&
+      (window.localStorage.getItem("album-lang") as Language)) || "es";
+    setLang(storedLang);
+    setHydrated(true);
+  }, []);
 
+  // Persist album
+  useEffect(() => { if (hydrated) saveAlbum(state); }, [state, hydrated]);
+  // Persist prefs
+  useEffect(() => { if (hydrated) savePrefs(prefs); }, [prefs, hydrated]);
+  // Persist lang
   useEffect(() => {
-    if (hydrated) saveAlbum(state)
-  }, [state, hydrated])
+    if (hydrated && typeof window !== "undefined") {
+      window.localStorage.setItem("album-lang", lang);
+    }
+  }, [lang, hydrated]);
 
-  const getCount = useCallback((id: string): number => state[id] ?? 0, [state])
+  // Apply theme to <html>
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-theme", prefs.theme);
+    }
+  }, [prefs.theme]);
+
+  const getCount = useCallback((id: string) => state[id] ?? 0, [state]);
 
   const increment = useCallback((id: string) => {
-    setState(prev => ({ ...prev, [id]: (prev[id] ?? 0) + 1 }))
-  }, [])
+    setState((p) => ({ ...p, [id]: (p[id] ?? 0) + 1 }));
+  }, []);
 
   const decrement = useCallback((id: string) => {
-    setState(prev => {
-      const current = prev[id] ?? 0
-      if (current <= 0) return prev
-      const next = current - 1
-      const updated = { ...prev }
-      if (next === 0) delete updated[id]
-      else updated[id] = next
-      return updated
-    })
-  }, [])
+    setState((p) => {
+      const c = (p[id] ?? 0) - 1;
+      const next = { ...p };
+      if (c <= 0) delete next[id]; else next[id] = c;
+      return next;
+    });
+  }, []);
 
-  const reset = useCallback(() => {
-    setState({})
-  }, [])
+  const reset = useCallback(() => setState({}), []);
+  const importState = useCallback((s: AlbumState) => setState(s), []);
+  const toggleLang = useCallback(() => setLang((l) => (l === "es" ? "en" : "es")), []);
 
-  const importState = useCallback((newState: AlbumState) => {
-    setState(newState)
-  }, [])
+  const setTheme = useCallback((theme: Theme) => setPrefs((p) => ({ ...p, theme })), []);
+  const toggleTheme = useCallback(
+    () => setPrefs((p) => ({ ...p, theme: p.theme === "dark" ? "light" : "dark" })),
+    []
+  );
+  const setStatsLayout = useCallback((statsLayout: StatsLayout) => setPrefs((p) => ({ ...p, statsLayout })), []);
+  const setSectionHeaderStyle = useCallback(
+    (sectionHeaderStyle: SectionHeaderStyle) => setPrefs((p) => ({ ...p, sectionHeaderStyle })),
+    []
+  );
 
-  const stats: AlbumStats = {
-    total: allStickers.length,
-    have: allStickers.filter(s => (state[s.id] ?? 0) >= 1).length,
-    missing: allStickers.filter(s => (state[s.id] ?? 0) === 0).length,
-    duplicates: allStickers.filter(s => (state[s.id] ?? 0) >= 2).length,
-    completionPct: Math.round(
-      (allStickers.filter(s => (state[s.id] ?? 0) >= 1).length / allStickers.length) * 100
-    ),
-  }
-
-  const toggleLang = useCallback(() => {
-    setLang(prev => prev === 'es' ? 'en' : 'es')
-  }, [])
+  const stats: AlbumStats = useMemo(() => {
+    let have = 0, missing = 0, duplicates = 0;
+    for (const s of allStickers) {
+      const c = state[s.id] ?? 0;
+      if (c === 0) missing++;
+      else if (c === 1) have++;
+      else { have++; duplicates += (c - 1); }
+    }
+    return {
+      total: allStickers.length,
+      have,
+      missing,
+      duplicates,
+      completionPct: Math.round((have / allStickers.length) * 100),
+    };
+  }, [state]);
 
   return {
-    state,
-    filter, setFilter,
-    search, setSearch,
-    lang, toggleLang,
-    hydrated,
-    getCount,
-    increment,
-    decrement,
-    reset,
-    importState,
-    stats,
-  }
+    state, filter, setFilter, search, setSearch, lang, toggleLang,
+    hydrated, getCount, increment, decrement, reset, importState, stats,
+    prefs, setTheme, toggleTheme, setStatsLayout, setSectionHeaderStyle,
+  };
 }

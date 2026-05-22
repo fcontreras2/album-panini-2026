@@ -11,37 +11,53 @@ interface Props {
 
 export default function SearchBar({ search, setSearch, lang }: Props) {
   return (
-    <div className="relative">
+    <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
       <svg
-        className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
-        style={{ color: "#475569" }}
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        viewBox="0 0 24 24"
+        strokeWidth="2"
+        style={{
+          position: "absolute",
+          left: 12,
+          top: "50%",
+          transform: "translateY(-50%)",
+          color: "var(--ink-3)",
+          pointerEvents: "none",
+        }}
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2.5}
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-        />
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4.35-4.35" />
       </svg>
       <input
+        className="search-input"
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={t(lang, "searchPlaceholder")}
-        className="search-input w-full pl-9 pr-8 py-2 text-sm font-medium rounded-lg"
       />
       {search && (
         <button
           onClick={() => setSearch("")}
-          className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors duration-150"
-          style={{ color: "#475569", fontSize: "11px" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#cbd5e1")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#475569")}
+          aria-label="Clear"
+          style={{
+            position: "absolute",
+            right: 8,
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "transparent",
+            border: 0,
+            color: "var(--ink-3)",
+            cursor: "pointer",
+            padding: 6,
+            lineHeight: 0,
+          }}
         >
-          ✕
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
         </button>
       )}
     </div>
