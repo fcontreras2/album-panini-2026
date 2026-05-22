@@ -17,23 +17,23 @@ export const TEAM_TO_GROUP: Record<string, TournamentGroup> = {
   // Group C
   BRA: "C", MAR: "C", HAI: "C", SCO: "C",
   // Group D
-  TUR: "D", JPN: "D", GER: "D", IRN: "D",
+  USA: "D", PAR: "D", AUS: "D", TUR: "D",
   // Group E
-  KSA: "E", NED: "E", IRQ: "E", JOR: "E",
+  GER: "E", CUW: "E", CIV: "E", ECU: "E",
   // Group F
-  UZB: "F", SWE: "F", BEL: "F", AUS: "F",
+  NED: "F", JPN: "F", SWE: "F", TUN: "F",
   // Group G
-  ESP: "G", CIV: "G", TUN: "G", PAR: "G",
+  BEL: "G", EGY: "G", IRN: "G", NZL: "G",
   // Group H
-  ECU: "H", EGY: "H", CPV: "H", URU: "H",
+  ESP: "H", CPV: "H", KSA: "H", URU: "H",
   // Group I
-  ARG: "I", SEN: "I", FRA: "I", NOR: "I",
+  FRA: "I", SEN: "I", IRQ: "I", NOR: "I",
   // Group J
-  AUT: "J", POR: "J", ALG: "J", CUW: "J",
+  ARG: "J", ALG: "J", AUT: "J", JOR: "J",
   // Group K
-  PAN: "K", COD: "K", ENG: "K", CRO: "K",
+  POR: "K", COD: "K", UZB: "K", COL: "K",
   // Group L
-  USA: "L", COL: "L", GHA: "L", NZL: "L",
+  ENG: "L", CRO: "L", GHA: "L", PAN: "L",
 };
 
 /**

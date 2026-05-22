@@ -196,8 +196,8 @@ html[data-theme="light"] body {
 .sk:active { transform: translateY(0) scale(0.96); }
 .sk:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
-.sk[data-state="missing"] { color: var(--ink-4); }
-.sk[data-state="missing"]:hover { border-color: var(--hairline-3); color: var(--ink-3); }
+.sk[data-state="missing"] { color: var(--ink-2); }
+.sk[data-state="missing"]:hover { border-color: var(--hairline-3); color: var(--ink); }
 
 .sk[data-state="have"] {
   background: linear-gradient(170deg, rgba(130,181,138,0.10) 0%, rgba(47,90,59,0.18) 100%);
@@ -225,14 +225,14 @@ html[data-theme="light"] body {
   font-family: var(--font-mono), "JetBrains Mono", monospace;
   font-size: 8px;
   line-height: 1;
-  opacity: 0.55;
+  opacity: 0.72;
   font-weight: 500;
   letter-spacing: 0.04em;
 }
 .sk-name {
   font-size: 7px;
   line-height: 1.1;
-  opacity: 0.62;
+  opacity: 0.78;
   text-align: left;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -551,6 +551,21 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   padding: 0 28px;
 }
 
+/* Hero zone inside the sticky bar (title + stats).
+   On mobile collapses via .hdr-scrolled on the parent. */
+.hdr-hero {
+  overflow: hidden;
+  transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.22s ease;
+  max-height: 400px; /* large enough to never clip */
+  opacity: 1;
+}
+
+/* Controls zone inside the sticky bar — always visible */
+.hdr-controls {
+  padding: 12px 0 8px;
+}
+
 .app-content {
   max-width: 1180px;
   margin: 0 auto;
@@ -602,6 +617,55 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   margin-bottom: 10px;
 }
 
+/* ── "¿Cómo funciona?" button ── */
+.how-it-works-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px 7px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--gold);
+  background: color-mix(in oklab, var(--gold) 12%, transparent);
+  color: var(--gold-light);
+  cursor: pointer;
+  font-family: var(--font-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: background 0.18s, box-shadow 0.18s, transform 0.14s;
+  white-space: nowrap;
+  box-shadow: 0 0 0 0 color-mix(in oklab, var(--gold) 30%, transparent);
+}
+.how-it-works-btn:hover {
+  background: color-mix(in oklab, var(--gold) 22%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--gold) 15%, transparent);
+  transform: translateY(-1px);
+}
+.how-it-works-btn:active { transform: translateY(0); }
+
+.how-it-works-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #1a1408;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.how-it-works-label { line-height: 1; }
+
+@media (max-width: 600px) {
+  /* On mobile show only the icon in the header */
+  .how-it-works-label { display: none; }
+  .how-it-works-btn { padding: 6px; border-radius: 50%; }
+}
+
 .app-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
@@ -645,25 +709,47 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   }
   .app-content { padding-top: 20px; padding-bottom: 48px; }
 
-  .app-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-    padding: 18px 0 14px;
-  }
-  .app-header > div:last-child {
-    align-self: flex-end;
+  /* Collapse hero (title + stats) when user scrolls down.
+     ResizeObserver on sticky-hdr will update --toolbar-h automatically. */
+  .sticky-hdr.hdr-scrolled .hdr-hero {
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
   }
 
-  .app-hero-num { font-size: 64px; }
+  /* Make the initial hero more compact on mobile */
+  .hdr-hero .app-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 0 8px;
+    flex-wrap: nowrap;
+  }
+  /* Hide the star mark to save horizontal space */
+  .hdr-hero .app-header > div:first-child > div:first-child {
+    display: none;
+  }
+  /* Compact the title */
+  .hdr-hero .app-header h1 {
+    font-size: clamp(22px, 6vw, 28px) !important;
+  }
+  .hdr-hero .app-header > div:last-child {
+    align-self: center;
+  }
+
+  /* Tighten controls zone on mobile */
+  .hdr-controls { padding: 8px 0 4px; }
+
+  .app-hero-num { font-size: 56px; }
 
   .app-stats-compact {
     grid-template-columns: 1fr;
-    gap: 18px;
+    gap: 12px;
   }
   .app-stats-compact > div:last-child {
     grid-column: 1;
-    gap: 18px !important;
+    gap: 14px !important;
   }
 
   .app-stats-extended-cards {
@@ -677,9 +763,23 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
 
   .sk-num { font-size: 16px; }
 
-  .app-toolbar { gap: 8px; }
+  .app-toolbar { gap: 8px; margin-bottom: 6px; }
 
-  .app-section-cycler { display: none; } /* hide style cycler on mobile */
+  .app-section-cycler { display: none; }
+}
+
+/* ── Trade modal responsive ── */
+@media (max-width: 600px) {
+  /* Stack columns vertically on mobile */
+  .trade-modal-grid {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+    overflow-y: auto;
+  }
+  /* Hide the vertical divider on mobile (becomes a horizontal line instead) */
+  .trade-modal-grid > div:nth-child(2) {
+    display: none;
+  }
 }
 
 /* ── Small mobile (iPhone SE) ── */

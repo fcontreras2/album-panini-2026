@@ -48,16 +48,23 @@ export default function Home() {
   } = useAlbum();
 
   const [grpFilter, setGrpFilter] = useState<GroupFilter>("all");
+  const [scrolled, setScrolled] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
-  // Track sticky toolbar height as a CSS var so section headers can pin under it.
+  // Collapse hero on scroll (mobile only — CSS hides it on desktop regardless)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 72);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Track sticky toolbar height so section headers pin just below it.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const el = toolbarRef.current;
     if (!el) return;
     const update = () => {
-      const h = el.offsetHeight;
-      document.documentElement.style.setProperty("--toolbar-h", h + "px");
+      document.documentElement.style.setProperty("--toolbar-h", el.offsetHeight + "px");
     };
     update();
     const ro = new ResizeObserver(update);
@@ -69,7 +76,7 @@ export default function Home() {
     };
   }, [hydrated]);
 
-  // Per-group progress ("have / total") for the filter chip badges
+  // Per-group progress for filter chip badges
   const grpProgress: Partial<Record<GroupFilter, string>> = {};
   const totals: Partial<Record<string, { have: number; total: number }>> = {};
   for (const g of GROUP_ORDER) totals[g] = { have: 0, total: 0 };
@@ -118,23 +125,26 @@ export default function Home() {
 
   return (
     <main style={{ minHeight: "100vh" }}>
-      <div className="sticky-hdr" ref={toolbarRef}>
+      <div className={`sticky-hdr${scrolled ? " hdr-scrolled" : ""}`} ref={toolbarRef}>
         <div className="app-shell">
-          <Header
-            lang={lang}
-            theme={prefs.theme}
-            onToggleLang={toggleLang}
-            onToggleTheme={toggleTheme}
-          />
+          {/* Hero zone — collapses on mobile when user scrolls */}
+          <div className="hdr-hero">
+            <Header
+              lang={lang}
+              theme={prefs.theme}
+              onToggleLang={toggleLang}
+              onToggleTheme={toggleTheme}
+            />
+            <StatsPanel
+              stats={stats}
+              layout={prefs.statsLayout}
+              lang={lang}
+              onCycleLayout={() => setStatsLayout(NEXT_STATS_LAYOUT[prefs.statsLayout])}
+            />
+          </div>
 
-          <StatsPanel
-            stats={stats}
-            layout={prefs.statsLayout}
-            lang={lang}
-            onCycleLayout={() => setStatsLayout(NEXT_STATS_LAYOUT[prefs.statsLayout])}
-          />
-
-          <div style={{ padding: "16px 0 12px" }}>
+          {/* Controls — always visible */}
+          <div className="hdr-controls">
             <div className="app-toolbar">
               <SearchBar search={search} setSearch={setSearch} lang={lang} />
               <FilterBar filter={filter} setFilter={setFilter} stats={stats} lang={lang} />
