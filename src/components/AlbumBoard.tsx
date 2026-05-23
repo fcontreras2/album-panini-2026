@@ -22,6 +22,8 @@ interface Props {
   getCount: (id: string) => number;
   onIncrement: (id: string) => void;
   onDecrement: (id: string) => void;
+  onMarkAll: (ids: string[]) => void;
+  onClearAll: (ids: string[]) => void;
 }
 
 export default function AlbumBoard({
@@ -34,6 +36,8 @@ export default function AlbumBoard({
   getCount,
   onIncrement,
   onDecrement,
+  onMarkAll,
+  onClearAll,
 }: Props) {
   const showIntroHistory = groupFilter === "all";
 
@@ -72,6 +76,9 @@ export default function AlbumBoard({
             getCount={getCount}
             onIncrement={onIncrement}
             onDecrement={onDecrement}
+            onMarkAll={onMarkAll}
+            onClearAll={onClearAll}
+            lang={lang}
             filter={filter}
             search={search}
             sectionHeaderStyle={sectionHeaderStyle}

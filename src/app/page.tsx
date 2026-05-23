@@ -3,21 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useAlbum } from "@/hooks/useAlbum";
 import Header from "@/components/Header";
-import StatsPanel from "@/components/StatsPanel";
 import FilterBar from "@/components/FilterBar";
 import SearchBar from "@/components/SearchBar";
 import ImportExport from "@/components/ImportExport";
 import AlbumBoard from "@/components/AlbumBoard";
 import GroupFilterBar from "@/components/GroupFilter";
-import { StatsLayout, SectionHeaderStyle, GroupFilter } from "@/types";
+import { AlbumStats, Language, SectionHeaderStyle, GroupFilter } from "@/types";
 import { teamSections } from "@/data/stickers";
 import { getGroup, GROUP_ORDER } from "@/data/groups";
-
-const NEXT_STATS_LAYOUT: Record<StatsLayout, StatsLayout> = {
-  compact: "extended",
-  extended: "ring",
-  ring: "compact",
-};
+import { t } from "@/lib/i18n";
 
 const NEXT_SECTION_STYLE: Record<SectionHeaderStyle, SectionHeaderStyle> = {
   minimal: "chip",
@@ -38,20 +32,22 @@ export default function Home() {
     getCount,
     increment,
     decrement,
+    markAll,
+    clearAll,
     reset,
     importState,
     stats,
     prefs,
     toggleTheme,
-    setStatsLayout,
     setSectionHeaderStyle,
   } = useAlbum();
 
   const [grpFilter, setGrpFilter] = useState<GroupFilter>("all");
   const [scrolled, setScrolled] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
-  // Collapse hero on scroll (mobile only — CSS hides it on desktop regardless)
+  // Collapse hero on scroll (mobile only)
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 72);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -75,6 +71,26 @@ export default function Home() {
       window.removeEventListener("resize", update);
     };
   }, [hydrated]);
+
+  // Close panel on Escape key
+  useEffect(() => {
+    if (!panelOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPanelOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panelOpen]);
+
+  // Prevent body scroll when mobile panel is open
+  useEffect(() => {
+    if (panelOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [panelOpen]);
 
   // Per-group progress for filter chip badges
   const grpProgress: Partial<Record<GroupFilter, string>> = {};
@@ -124,69 +140,290 @@ export default function Home() {
   }
 
   return (
-    <main style={{ minHeight: "100vh" }}>
-      <div className={`sticky-hdr${scrolled ? " hdr-scrolled" : ""}`} ref={toolbarRef}>
-        <div className="app-shell">
-          {/* Hero zone — collapses on mobile when user scrolls */}
-          <div className="hdr-hero">
-            <Header
-              lang={lang}
-              theme={prefs.theme}
-              onToggleLang={toggleLang}
-              onToggleTheme={toggleTheme}
-            />
-            <StatsPanel
-              stats={stats}
-              layout={prefs.statsLayout}
-              lang={lang}
-              onCycleLayout={() => setStatsLayout(NEXT_STATS_LAYOUT[prefs.statsLayout])}
-            />
-          </div>
+    <div className="app-layout">
+      {/* ── Mobile overlay ── */}
+      {panelOpen && (
+        <div
+          className="left-panel-overlay"
+          onClick={() => setPanelOpen(false)}
+        />
+      )}
 
-          {/* Controls — always visible */}
-          <div className="hdr-controls">
-            <div className="app-toolbar">
-              <SearchBar search={search} setSearch={setSearch} lang={lang} />
-              <FilterBar filter={filter} setFilter={setFilter} stats={stats} lang={lang} />
-            </div>
-            <GroupFilterBar
-              value={grpFilter}
-              onChange={setGrpFilter}
-              lang={lang}
-              progress={grpProgress}
-            />
-            <ImportExport state={state} onImport={importState} onReset={reset} lang={lang} />
-          </div>
+      {/* ════════════════════════════════════════
+          LEFT PANEL — Stats + Actions + Trade
+          ════════════════════════════════════════ */}
+      <aside className={`left-panel${panelOpen ? " left-panel--open" : ""}`}>
+        <div className="left-panel-inner">
 
-          <div className="app-section-cycler">
-            <button
-              onClick={() => setSectionHeaderStyle(NEXT_SECTION_STYLE[prefs.sectionHeaderStyle])}
-              className="btn-ghost"
-              title="Cycle section header style"
-              style={{ fontSize: 9.5, letterSpacing: "0.12em", color: "var(--ink-3)" }}
+          {/* Top bar — logo + close on mobile */}
+          <div className="left-panel-topbar">
+            <span
+              className="font-mono"
+              style={{
+                fontSize: 8.5,
+                letterSpacing: "0.3em",
+                textTransform: "uppercase",
+                color: "var(--gold)",
+              }}
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 6h18M3 12h18M3 18h18" />
-              </svg>
-              SECTION · {prefs.sectionHeaderStyle.toUpperCase()}
+              ✦ FIFA 2026
+            </span>
+            <button
+              className="left-panel-close-btn"
+              onClick={() => setPanelOpen(false)}
+              aria-label="Cerrar panel"
+            >
+              ✕
             </button>
+          </div>
+
+          {/* ── Sección: Stats ── */}
+          <div className="left-panel-section">
+            <div className="left-panel-section-label">
+              {lang === "es" ? "Progreso" : "Progress"}
+            </div>
+            <SidebarStats stats={stats} lang={lang} />
+          </div>
+
+          <div className="left-panel-divider" />
+
+          {/* ── Sección: Import / Export / QR / Reset + Trade ── */}
+          <div className="left-panel-section">
+            <div className="left-panel-section-label">
+              {lang === "es" ? "Acciones · Trade" : "Actions · Trade"}
+            </div>
+            <ImportExport
+              state={state}
+              onImport={importState}
+              onReset={reset}
+              lang={lang}
+            />
+          </div>
+
+        </div>
+      </aside>
+
+      {/* ── Mobile hamburger FAB ── */}
+      <button
+        className="hamburger-btn"
+        onClick={() => setPanelOpen(true)}
+        aria-label="Abrir panel de estadísticas y acciones"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <path d="M3 6h18M3 12h18M3 18h18" />
+        </svg>
+      </button>
+
+      {/* ════════════════════════════════════════
+          RIGHT PANEL — Header + Album
+          ════════════════════════════════════════ */}
+      <div className="right-panel">
+
+        {/* Sticky top bar — header + search + filters */}
+        <div className={`sticky-hdr${scrolled ? " hdr-scrolled" : ""}`} ref={toolbarRef}>
+          <div className="right-panel-shell">
+
+            {/* Hero zone — collapses on mobile when user scrolls */}
+            <div className="hdr-hero">
+              <Header
+                lang={lang}
+                theme={prefs.theme}
+                onToggleLang={toggleLang}
+                onToggleTheme={toggleTheme}
+              />
+            </div>
+
+            {/* Controls — always visible */}
+            <div className="hdr-controls">
+              <div className="app-toolbar">
+                <SearchBar search={search} setSearch={setSearch} lang={lang} />
+                <FilterBar filter={filter} setFilter={setFilter} stats={stats} lang={lang} />
+                {/* Section style cycler */}
+                <button
+                  onClick={() => setSectionHeaderStyle(NEXT_SECTION_STYLE[prefs.sectionHeaderStyle])}
+                  className="btn-ghost"
+                  title="Cambiar estilo de sección"
+                  style={{ fontSize: 9.5, letterSpacing: "0.12em", color: "var(--ink-3)", marginLeft: "auto" }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18M3 12h18M3 18h18" />
+                  </svg>
+                  {prefs.sectionHeaderStyle.toUpperCase()}
+                </button>
+              </div>
+              <GroupFilterBar
+                value={grpFilter}
+                onChange={setGrpFilter}
+                lang={lang}
+                progress={grpProgress}
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* Album board */}
+        <div className="right-panel-content">
+          <AlbumBoard
+            state={state}
+            filter={filter}
+            search={search}
+            lang={lang}
+            sectionHeaderStyle={prefs.sectionHeaderStyle}
+            groupFilter={grpFilter}
+            getCount={getCount}
+            onIncrement={increment}
+            onDecrement={decrement}
+            onMarkAll={markAll}
+            onClearAll={clearAll}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SIDEBAR STATS — compact vertical layout for left panel
+   ══════════════════════════════════════════════════════════════ */
+
+function SidebarStats({ stats, lang }: { stats: AlbumStats; lang: Language }) {
+  const R = 42;
+  const C = 2 * Math.PI * R;
+  const offset = C - (C * stats.completionPct) / 100;
+  const complete = stats.completionPct >= 100;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+      {/* Ring + progress */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        {/* Ring */}
+        <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}>
+          <svg width="96" height="96" viewBox="0 0 96 96" style={{ transform: "rotate(-90deg)" }}>
+            <circle cx="48" cy="48" r={R} fill="none" strokeWidth="5" className="ring-track" />
+            <circle
+              cx="48"
+              cy="48"
+              r={R}
+              fill="none"
+              strokeWidth="5"
+              strokeLinecap="round"
+              className="ring-fill"
+              strokeDasharray={C}
+              strokeDashoffset={offset}
+              style={{
+                stroke: complete ? "var(--have)" : "var(--gold)",
+                filter: `drop-shadow(0 0 6px ${complete ? "rgba(130,181,138,0.5)" : "rgba(212,168,87,0.4)"})`,
+              }}
+            />
+          </svg>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span
+              className="font-display tabular text-gold"
+              style={{ fontSize: 30, lineHeight: 0.9 }}
+              key={stats.completionPct}
+            >
+              {stats.completionPct}
+              <span style={{ fontSize: 13, color: "var(--ink-3)" }}>%</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Progress bar + counts */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            className="font-mono"
+            style={{
+              fontSize: 8,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "var(--ink-3)",
+              marginBottom: 8,
+            }}
+          >
+            {t(lang, "progress")}
+          </div>
+          <div style={{ height: 3, background: "var(--hairline-2)", borderRadius: 2, overflow: "hidden", marginBottom: 8 }}>
+            <div
+              style={{
+                width: `${stats.completionPct}%`,
+                height: "100%",
+                background: complete
+                  ? "linear-gradient(90deg, var(--have-deep), var(--have))"
+                  : "linear-gradient(90deg, var(--gold-deep) 0%, var(--gold) 60%, var(--gold-light) 100%)",
+                boxShadow: complete
+                  ? "0 0 6px rgba(130,181,138,0.5)"
+                  : "0 0 6px rgba(212,168,87,0.45)",
+                transition: "width 0.8s cubic-bezier(0.2,0.8,0.2,1)",
+                borderRadius: 2,
+              }}
+            />
+          </div>
+          <div
+            className="font-mono tabular"
+            style={{ fontSize: 9.5, color: "var(--ink-3)" }}
+          >
+            <span style={{ color: "var(--ink)" }}>{stats.have}</span> / {stats.total}
+          </div>
+          <div
+            className="font-mono tabular"
+            style={{ fontSize: 9, color: "var(--ink-3)", marginTop: 3 }}
+          >
+            {stats.total - stats.have} {t(lang, "toFind")}
           </div>
         </div>
       </div>
 
-      <div className="app-content">
-        <AlbumBoard
-          state={state}
-          filter={filter}
-          search={search}
-          lang={lang}
-          sectionHeaderStyle={prefs.sectionHeaderStyle}
-          groupFilter={grpFilter}
-          getCount={getCount}
-          onIncrement={increment}
-          onDecrement={decrement}
-        />
+      {/* Three metrics */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+        <SidebarMetric label={t(lang, "have")} value={stats.have} color="var(--have)" />
+        <SidebarMetric label={t(lang, "missing")} value={stats.missing} color="var(--ink-2)" />
+        <SidebarMetric label={t(lang, "duplicates")} value={stats.duplicates} color="var(--gold)" />
       </div>
-    </main>
+
+    </div>
+  );
+}
+
+function SidebarMetric({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div
+        className="font-mono"
+        style={{
+          fontSize: 7.5,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "var(--ink-3)",
+          lineHeight: 1,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        className="font-display tabular"
+        style={{ fontSize: 28, lineHeight: 0.9, color }}
+      >
+        {value}
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Sticker, FilterType, SectionHeaderStyle, TournamentGroup } from "@/types";
+import { Sticker, FilterType, Language, SectionHeaderStyle, TournamentGroup } from "@/types";
 import StickerCard from "./StickerCard";
 import SectionHeader from "./SectionHeader";
 
@@ -20,6 +20,9 @@ interface Props {
   sectionHeaderStyle: SectionHeaderStyle;
   group?: TournamentGroup | null;
   sticky?: boolean;
+  lang?: Language;
+  onMarkAll?: (ids: string[]) => void;
+  onClearAll?: (ids: string[]) => void;
 }
 
 function matchesFilter(count: number, filter: FilterType): boolean {
@@ -55,6 +58,9 @@ export default function TeamSectionComponent({
   sectionHeaderStyle,
   group,
   sticky = true,
+  lang = "es",
+  onMarkAll,
+  onClearAll,
 }: Props) {
   const visible = useMemo(() => {
     return stickers.filter((s) => {
@@ -81,7 +87,53 @@ export default function TeamSectionComponent({
         group={group}
         sticky={sticky}
       />
-      <div className="app-grid" style={{ marginTop: sticky ? 12 : 0 }}>
+      {(onMarkAll || onClearAll) && (
+        <div style={{ display: "flex", gap: 6, marginTop: sticky ? 8 : 4, marginBottom: 8 }}>
+          {onMarkAll && (
+            <button
+              onClick={() => onMarkAll(stickers.map((s) => s.id))}
+              style={{
+                fontSize: 9,
+                padding: "2px 9px",
+                borderRadius: 4,
+                border: "1px solid rgba(130,181,138,0.35)",
+                background: "color-mix(in oklab, var(--have) 8%, transparent)",
+                color: "var(--have)",
+                cursor: "pointer",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                fontFamily: "var(--font-mono, monospace)",
+                fontWeight: 600,
+                transition: "background 0.12s, border-color 0.12s",
+              }}
+            >
+              {lang === "es" ? "✓ Marcar todos" : "✓ Mark all"}
+            </button>
+          )}
+          {onClearAll && (
+            <button
+              onClick={() => onClearAll(stickers.map((s) => s.id))}
+              style={{
+                fontSize: 9,
+                padding: "2px 9px",
+                borderRadius: 4,
+                border: "1px solid var(--hairline-3)",
+                background: "transparent",
+                color: "var(--ink-3)",
+                cursor: "pointer",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                fontFamily: "var(--font-mono, monospace)",
+                fontWeight: 600,
+                transition: "background 0.12s, border-color 0.12s",
+              }}
+            >
+              {lang === "es" ? "✕ Borrar todos" : "✕ Clear all"}
+            </button>
+          )}
+        </div>
+      )}
+      <div className="app-grid" style={{ marginTop: (onMarkAll || onClearAll) ? 0 : sticky ? 12 : 0 }}>
         {stickers.map((s) => {
           const c = getCount(s.id);
           const dimmed = !matchesFilter(c, filter) || !matchesSearch(s, search);

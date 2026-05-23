@@ -34,7 +34,31 @@ export default function StickerCard({
   const state: "missing" | "have" | "duplicate" =
     count === 0 ? "missing" : count === 1 ? "have" : "duplicate";
 
+  // ── Long-press to decrement (mobile) ──────────────────────────
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const didLongPress = useRef(false);
+
+  const startLongPress = () => {
+    didLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      didLongPress.current = true;
+      onDecrement();
+    }, 500);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
   const handleClick = (e: React.MouseEvent) => {
+    // If a long press just fired, swallow the resulting click
+    if (didLongPress.current) {
+      didLongPress.current = false;
+      return;
+    }
     if (e.shiftKey) onDecrement();
     else onIncrement();
   };
@@ -62,10 +86,14 @@ export default function StickerCard({
       data-dimmed={dimmed ? "true" : "false"}
       onClick={handleClick}
       onContextMenu={handleContext}
+      onTouchStart={startLongPress}
+      onTouchEnd={cancelLongPress}
+      onTouchMove={cancelLongPress}
       title={[
         `${sticker.code} — ${sticker.name}`,
         sticker.isFoil ? "✦ FOIL" : "",
         "Click: +1  ·  Right-click / Shift+click: −1",
+        "Mobile: mantén presionado para −1",
       ]
         .filter(Boolean)
         .join("\n")}
@@ -84,11 +112,17 @@ export default function StickerCard({
         {sticker.name}
       </span>
 
-      {/* Duplicate count pill (top-right) */}
+      {/* Duplicate count pill (top-right) — tappable on mobile to decrement */}
       {count >= 2 && (
-        <span className="sk-count-pill" aria-label={`${count} copies`}>
+        <button
+          className="sk-count-pill"
+          aria-label={`×${count} — toca para quitar uno`}
+          onClick={(e) => { e.stopPropagation(); onDecrement(); }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
           ×{count}
-        </span>
+        </button>
       )}
 
       {/* Collected checkmark (bottom-right) */}
@@ -101,5 +135,4 @@ export default function StickerCard({
       )}
     </button>
   );
-  
 }

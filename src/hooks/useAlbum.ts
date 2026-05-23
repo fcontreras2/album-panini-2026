@@ -91,6 +91,24 @@ export function useAlbum() {
     });
   }, []);
 
+  const markAll = useCallback((ids: string[]) => {
+    setState((p) => {
+      const next = { ...p };
+      for (const id of ids) {
+        if ((next[id] ?? 0) === 0) next[id] = 1;
+      }
+      return next;
+    });
+  }, []);
+
+  const clearAll = useCallback((ids: string[]) => {
+    setState((p) => {
+      const next = { ...p };
+      for (const id of ids) delete next[id];
+      return next;
+    });
+  }, []);
+
   const reset = useCallback(() => setState({}), []);
   const importState = useCallback((s: AlbumState) => setState(s), []);
   const toggleLang = useCallback(() => setLang((l) => (l === "es" ? "en" : "es")), []);
@@ -125,7 +143,7 @@ export function useAlbum() {
 
   return {
     state, filter, setFilter, search, setSearch, lang, toggleLang,
-    hydrated, getCount, increment, decrement, reset, importState, stats,
+    hydrated, getCount, increment, decrement, markAll, clearAll, reset, importState, stats,
     prefs, setTheme, toggleTheme, setStatsLayout, setSectionHeaderStyle,
   };
 }

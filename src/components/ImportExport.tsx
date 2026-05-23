@@ -2,10 +2,13 @@
 
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlbumState, Language, Sticker } from "@/types";
+import { AlbumState, Language, Sticker, TournamentGroup } from "@/types";
 import { exportAlbum, importAlbum } from "@/lib/storage";
 import { allStickers } from "@/data/stickers";
 import { t } from "@/lib/i18n";
+import { TEAM_TO_GROUP, GROUP_ORDER } from "@/data/groups";
+import { QRDisplayModal, QRScanModal } from "@/components/QRModals";
+import StorageInfo from "@/components/StorageInfo";
 
 interface Props {
   state: AlbumState;
@@ -411,6 +414,8 @@ export default function ImportExport({ state, onImport, onReset, lang }: Props) 
   const [matchOpen, setMatchOpen] = useState(false);
   const [selectedGet, setSelectedGet] = useState<Set<string>>(new Set());
   const [selectedGive, setSelectedGive] = useState<Set<string>>(new Set());
+  const [qrDisplayOpen, setQrDisplayOpen] = useState(false);
+  const [qrScanOpen, setQrScanOpen] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const partnerRef = useRef<HTMLInputElement>(null);
@@ -471,6 +476,22 @@ export default function ImportExport({ state, onImport, onReset, lang }: Props) 
       );
     }
     e.target.value = "";
+  };
+
+  /* ── QR scanned partner album ── */
+
+  const handleQRScanned = (partnerState: AlbumState) => {
+    const total = allStickers.filter((s) => (partnerState[s.id] ?? 0) >= 1).length;
+    const dups = allStickers.filter((s) => (partnerState[s.id] ?? 0) >= 2).length;
+    const pData: PartnerData = { state: partnerState, total, dups };
+    setPartner(pData);
+    const canGet = allStickers.filter((s) => (partnerState[s.id] ?? 0) >= 2 && (state[s.id] ?? 0) === 0);
+    const canGive = allStickers.filter((s) => (state[s.id] ?? 0) >= 2 && (partnerState[s.id] ?? 0) === 0);
+    setSelectedGet(new Set(canGet.map((s) => s.id)));
+    setSelectedGive(new Set(canGive.map((s) => s.id)));
+    setTradeOpen(true);
+    setMatchOpen(true);
+    setError("");
   };
 
   /* ── Selection helpers ── */
@@ -559,6 +580,24 @@ export default function ImportExport({ state, onImport, onReset, lang }: Props) 
           {t(lang, "importBtn")}
         </button>
         <button
+          onClick={() => setQrDisplayOpen(true)}
+          className="btn-ghost"
+          style={{ color: "var(--gold-light)", borderColor: "rgba(212,168,87,0.4)" }}
+          title={lang === "es" ? "Mostrar mi QR" : "Show my QR"}
+        >
+          <Icon path="M3 9V5a2 2 0 012-2h4M3 15v4a2 2 0 002 2h4M21 9V5a2 2 0 00-2-2h-4M21 15v4a2 2 0 01-2 2h-4M9 9h6M9 12h6M9 15h6" />
+          {lang === "es" ? "Mi QR" : "My QR"}
+        </button>
+        <button
+          onClick={() => setQrScanOpen(true)}
+          className="btn-ghost"
+          style={{ color: "var(--have)", borderColor: "rgba(130,181,138,0.35)" }}
+          title={lang === "es" ? "Escanear QR del compañero" : "Scan partner QR"}
+        >
+          <Icon path="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M12 8v8M8 12h8" />
+          {lang === "es" ? "Escanear QR" : "Scan QR"}
+        </button>
+        <button
           onClick={() => { setTradeOpen((v) => !v); if (tradeOpen) { setPartner(null); setMatchOpen(false); } }}
           className="btn-ghost"
           style={{
@@ -585,6 +624,9 @@ export default function ImportExport({ state, onImport, onReset, lang }: Props) 
           {t(lang, "resetAlbum")}
         </button>
       </div>
+
+      {/* ── Storage info notice ── */}
+      <StorageInfo lang={lang} onExport={() => exportAlbum(state)} />
 
       {error && <p style={{ fontSize: 11, marginTop: 6, color: "#f87171" }}>{error}</p>}
 
@@ -690,6 +732,22 @@ export default function ImportExport({ state, onImport, onReset, lang }: Props) 
           )}
         </div>
       )}
+
+      {/* ── QR Display modal (portal) ── */}
+      {qrDisplayOpen && typeof document !== "undefined" &&
+        createPortal(
+          <QRDisplayModal state={state} lang={lang} onClose={() => setQrDisplayOpen(false)} />,
+          document.body
+        )
+      }
+
+      {/* ── QR Scanner modal (portal) ── */}
+      {qrScanOpen && typeof document !== "undefined" &&
+        createPortal(
+          <QRScanModal lang={lang} onScanned={handleQRScanned} onClose={() => setQrScanOpen(false)} />,
+          document.body
+        )
+      }
 
       {/* ── Trade match modal (portal) ── */}
       {matchOpen && partner && typeof document !== "undefined" &&

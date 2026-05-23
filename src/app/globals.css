@@ -217,25 +217,25 @@ html[data-theme="light"] body {
 
 .sk-num {
   font-family: var(--font-bebas), "Bebas Neue", sans-serif;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1;
   letter-spacing: 0.02em;
 }
 .sk-code {
   font-family: var(--font-mono), "JetBrains Mono", monospace;
-  font-size: 8px;
+  font-size: 9px;
   line-height: 1;
   opacity: 0.72;
   font-weight: 500;
   letter-spacing: 0.04em;
 }
 .sk-name {
-  font-size: 7px;
-  line-height: 1.1;
-  opacity: 0.78;
+  font-size: 10px;
+  line-height: 1.15;
+  opacity: 0.88;
   text-align: left;
   display: -webkit-box;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-weight: 500;
@@ -252,7 +252,13 @@ html[data-theme="light"] body {
   background: var(--gold);
   color: #1a1408;
   z-index: 3;
+  /* interactive on mobile */
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s, opacity 0.1s;
 }
+.sk-count-pill:active { transform: scale(0.82); opacity: 0.75; }
 .sk-check {
   position: absolute;
   bottom: 4px; right: 5px;
@@ -511,9 +517,12 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   border-bottom: 0 !important;
 }
 
-/* ── Sticky header (toolbar) height var fallback ──────────── */
-:root { --shell-pad: 28px; }
-@media (max-width: 900px) { :root { --shell-pad: 20px; } }
+/* ── Layout vars ──────────────────────────────────────────── */
+:root {
+  --shell-pad: 28px;
+  --left-panel-w: 272px;
+}
+@media (max-width: 960px) { :root { --shell-pad: 20px; } }
 @media (max-width: 600px) { :root { --shell-pad: 14px; } }
 .sticky-hdr {
   position: sticky;
@@ -544,12 +553,128 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
 .ring-track { stroke: var(--hairline-2); }
 .ring-fill { transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
-/* ── Layout primitives + responsive ────────────────────────── */
-.app-shell {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 0 28px;
+/* ── Two-panel app layout ───────────────────────────────────── */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
 }
+
+/* ── Left panel (fixed sidebar) ──────────────────────────────  */
+.left-panel {
+  width: var(--left-panel-w);
+  flex-shrink: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--hairline);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 50;
+  scrollbar-width: thin;
+}
+
+.left-panel-inner {
+  padding: 20px 18px 48px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.left-panel-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+
+.left-panel-close-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px;
+  line-height: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+.left-panel-section {
+  padding: 14px 0;
+}
+
+.left-panel-section-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 8px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 12px;
+}
+
+.left-panel-divider {
+  height: 1px;
+  background: var(--hairline);
+  flex-shrink: 0;
+}
+
+/* ── Right panel (scrollable main area) ─────────────────────── */
+.right-panel {
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--left-panel-w);
+}
+
+.right-panel-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--shell-pad);
+}
+
+.right-panel-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 28px var(--shell-pad) 80px;
+}
+
+/* ── Mobile overlay (behind drawer) ─────────────────────────── */
+.left-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* ── Hamburger FAB (mobile only) ────────────────────────────── */
+.hamburger-btn {
+  display: none;
+  position: fixed;
+  bottom: 22px;
+  left: 16px;
+  z-index: 60;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #1a1408;
+  border: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(212, 168, 87, 0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.hamburger-btn:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(212, 168, 87, 0.4);
+}
+.hamburger-btn:active { transform: scale(0.94); }
 
 /* Hero zone inside the sticky bar (title + stats).
    On mobile collapses via .hdr-scrolled on the parent. */
@@ -563,13 +688,7 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
 
 /* Controls zone inside the sticky bar — always visible */
 .hdr-controls {
-  padding: 12px 0 8px;
-}
-
-.app-content {
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 32px 28px 80px;
+  padding: 10px 0 6px;
 }
 
 .app-header {
@@ -577,7 +696,7 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  padding: 28px 0 20px;
+  padding: 22px 0 16px;
 }
 
 .app-stats-compact {
@@ -668,7 +787,7 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
 
 .app-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+  grid-template-columns: repeat(10, 1fr);
   gap: 6px;
 }
 
@@ -684,13 +803,25 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   padding-bottom: 8px;
 }
 
+/* ── Mobile: left panel becomes a drawer ────────────────────── */
+@media (max-width: 960px) {
+  .left-panel {
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+  }
+  .left-panel--open {
+    transform: translateX(0);
+    box-shadow: 4px 0 40px rgba(0, 0, 0, 0.55);
+  }
+  .left-panel-close-btn { display: flex; }
+  .right-panel { margin-left: 0; }
+  .hamburger-btn { display: flex; }
+}
+
 /* ── Tablet ── */
 @media (max-width: 900px) {
-  .app-shell, .app-content {
-    padding-left: 20px;
-    padding-right: 20px;
-  }
-  .app-content { padding-top: 24px; padding-bottom: 60px; }
+  .right-panel-content { padding-top: 20px; padding-bottom: 60px; }
 
   .app-stats-compact {
     grid-template-columns: auto 1fr;
@@ -699,18 +830,18 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   .app-stats-compact > div:last-child {
     grid-column: 1 / -1;
   }
+
+  /* 8 columns on tablet */
+  .app-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
 }
 
 /* ── Mobile ── */
 @media (max-width: 600px) {
-  .app-shell, .app-content {
-    padding-left: 14px;
-    padding-right: 14px;
-  }
-  .app-content { padding-top: 20px; padding-bottom: 48px; }
+  .right-panel-content { padding-top: 16px; padding-bottom: 80px; }
 
-  /* Collapse hero (title + stats) when user scrolls down.
-     ResizeObserver on sticky-hdr will update --toolbar-h automatically. */
+  /* Collapse hero (title + stats) when user scrolls down */
   .sticky-hdr.hdr-scrolled .hdr-hero {
     max-height: 0;
     opacity: 0;
@@ -723,7 +854,7 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 14px 0 8px;
+    padding: 12px 0 6px;
     flex-wrap: nowrap;
   }
   /* Hide the star mark to save horizontal space */
@@ -732,14 +863,14 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   }
   /* Compact the title */
   .hdr-hero .app-header h1 {
-    font-size: clamp(22px, 6vw, 28px) !important;
+    font-size: clamp(20px, 6vw, 26px) !important;
   }
   .hdr-hero .app-header > div:last-child {
     align-self: center;
   }
 
   /* Tighten controls zone on mobile */
-  .hdr-controls { padding: 8px 0 4px; }
+  .hdr-controls { padding: 6px 0 4px; }
 
   .app-hero-num { font-size: 56px; }
 
@@ -756,12 +887,14 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
     grid-template-columns: repeat(2, 1fr);
   }
 
+  /* 6 columns on mobile */
   .app-grid {
-    grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 5px;
   }
 
-  .sk-num { font-size: 16px; }
+  .sk-num { font-size: 17px; }
+  .sk-name { font-size: 8.5px; }
 
   .app-toolbar { gap: 8px; margin-bottom: 6px; }
 
@@ -791,5 +924,5 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   .sk { padding: 3px 4px; }
   .sk-num { font-size: 15px; }
   .sk-code { font-size: 7.5px; }
-  .sk-name { font-size: 6.5px; }
+  .sk-name { font-size: 7.5px; -webkit-line-clamp: 1; }
 }
