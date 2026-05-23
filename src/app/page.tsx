@@ -200,6 +200,44 @@ export default function Home() {
             />
           </div>
 
+          {/* ── Hint: controles de teclado/mouse — pegado al fondo ── */}
+          <div style={{ marginTop: "auto", paddingTop: 24 }}>
+            <div
+              style={{
+                borderTop: "1px solid var(--hairline-2)",
+                paddingTop: 14,
+              }}
+            >
+              <div
+                className="font-mono"
+                style={{
+                  fontSize: 8.5,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: "var(--ink-4)",
+                  lineHeight: 1.9,
+                }}
+              >
+                <div>
+                  <span style={{ color: "var(--have)", opacity: 0.8 }}>●</span>
+                  &nbsp;{lang === "es" ? "Click izq." : "Left click"}&nbsp;&nbsp;+1
+                </div>
+                <div>
+                  <span style={{ color: "var(--ink-3)", opacity: 0.8 }}>●</span>
+                  &nbsp;{lang === "es" ? "Click der." : "Right click"}&nbsp;&nbsp;−1
+                </div>
+                <div>
+                  <span style={{ color: "var(--gold)", opacity: 0.8 }}>●</span>
+                  &nbsp;Shift+click&nbsp;&nbsp;−1
+                </div>
+                <div style={{ marginTop: 6, color: "var(--ink-4)" }}>
+                  <span style={{ color: "var(--ink-3)", opacity: 0.8 }}>●</span>
+                  &nbsp;{lang === "es" ? "Mantén presionado −1" : "Long press −1"}
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </aside>
 
@@ -230,6 +268,8 @@ export default function Home() {
                 theme={prefs.theme}
                 onToggleLang={toggleLang}
                 onToggleTheme={toggleTheme}
+                sectionHeaderStyle={prefs.sectionHeaderStyle}
+                onCycleSectionStyle={() => setSectionHeaderStyle(NEXT_SECTION_STYLE[prefs.sectionHeaderStyle])}
               />
             </div>
 
@@ -238,18 +278,6 @@ export default function Home() {
               <div className="app-toolbar">
                 <SearchBar search={search} setSearch={setSearch} lang={lang} />
                 <FilterBar filter={filter} setFilter={setFilter} stats={stats} lang={lang} />
-                {/* Section style cycler */}
-                <button
-                  onClick={() => setSectionHeaderStyle(NEXT_SECTION_STYLE[prefs.sectionHeaderStyle])}
-                  className="btn-ghost"
-                  title="Cambiar estilo de sección"
-                  style={{ fontSize: 9.5, letterSpacing: "0.12em", color: "var(--ink-3)", marginLeft: "auto" }}
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 6h18M3 12h18M3 18h18" />
-                  </svg>
-                  {prefs.sectionHeaderStyle.toUpperCase()}
-                </button>
               </div>
               <GroupFilterBar
                 value={grpFilter}

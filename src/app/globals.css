@@ -175,7 +175,7 @@ html[data-theme="light"] body {
 /* ── Sticker card ──────────────────────────────────────────── */
 .sk {
   position: relative;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 5; /* mobile: portrait */
   border-radius: var(--radius-sm);
   border: 1px solid var(--hairline-2);
   background: var(--miss-bg);
@@ -736,6 +736,44 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   margin-bottom: 10px;
 }
 
+/* ── Header responsive helpers ────────────────────────────── */
+
+/* Mark (SVG logo) — smaller on mobile */
+.hdr-mark { width: 44px; height: 44px; }
+@media (max-width: 600px) { .hdr-mark { display: none; } }
+
+/* Subtitle line — hidden on mobile */
+.hdr-subtitle { display: block; }
+@media (max-width: 600px) { .hdr-subtitle { display: none; } }
+
+/* Desktop controls row — hidden on mobile */
+.hdr-controls-desktop { display: flex; }
+@media (max-width: 900px) { .hdr-controls-desktop { display: none; } }
+
+/* Mobile dropdown trigger — hidden on desktop */
+.hdr-controls-mobile { display: none; }
+@media (max-width: 900px) { .hdr-controls-mobile { display: block; } }
+
+/* Dropdown item style */
+.hdr-drop-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--hairline-2);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+}
+.hdr-drop-item:last-child { border-bottom: none; }
+.hdr-drop-item:hover { background: var(--hairline-2); color: var(--ink); }
+
 /* ── "¿Cómo funciona?" button ── */
 .how-it-works-btn {
   display: inline-flex;
@@ -801,6 +839,11 @@ html[data-theme="light"] .sk-foil::before { mix-blend-mode: multiply; opacity: 0
   display: flex;
   justify-content: flex-end;
   padding-bottom: 8px;
+}
+
+/* ── Desktop: wider sticker card ────────────────────────────── */
+@media (min-width: 961px) {
+  .sk { aspect-ratio: 7 / 5; }
 }
 
 /* ── Mobile: left panel becomes a drawer ────────────────────── */
